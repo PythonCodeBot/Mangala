@@ -28,16 +28,23 @@ class HoverBehavior(object):
         self.register_event_type('on_leave')
         Window.bind(mouse_pos=self.on_mouse_pos)
         super(HoverBehavior, self).__init__(**kwargs)
+        self.have_print = False
+
 
     def on_mouse_pos(self, *args):
+        nop = lambda *a, **k: None
+        global print
+        self.print = print if self.have_print else nop
         if not self.get_root_window():
             return # do proceed if I'm not displayed <=> If have no parent
         pos = args[1]
         #Next line to_widget allow to compensate for relative layout
-        inside = self.collide_point(*self.to_widget(*pos))
+        inside = self.collide_point(*self.to_widget(*pos))  # if in sinde
+
         if self.hovered == inside:
             #We have already done what was needed
             return
+        self.print("in", inside)
         self.border_point = pos
         self.hovered = inside
         if inside:
