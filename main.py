@@ -1,17 +1,14 @@
-from kivy.app import App
+"""the main script. this is the start"""
 
+from typing import List
+
+from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
-from typing import List
-
-from data_types import *
-from ai import AI
-from link_list import LinkList
 from pit import Pit
 from ui_board import UIBoard
-from defs import *
 # todo:
 # why is it crash on 3th turn =2
 # add minimax algorithm =3->5
@@ -35,22 +32,26 @@ from defs import *
 
 
 class PitRaw(BoxLayout):
+    """just a rwa of pits"""
     pit_type: int = -1
-    pass
 
 
 class PitColumn(BoxLayout):
-    pass
+    """just a column of pits"""
 
 
 class PlayLayout(BoxLayout):
-    # the game manager
-    # move stones
-    # end turns
-    # and so
+    """where the user can interact with the game"""
+
 
     @staticmethod
-    def get_pits_from_object(pits_list: List[Pit], object_parent):
+    def get_pits_from_object(pits_list: List[Pit], object_parent) -> None:
+        """
+        save the pits of children of this widgets.
+        :param pits_list: the list where we stone the list. (pointer)
+        :param object_parent: the object we search
+        :return: None
+        """
         for widget in object_parent.children:
             if isinstance(widget, Pit):
                 pits_list.append(widget)
@@ -58,32 +59,46 @@ class PlayLayout(BoxLayout):
                 PlayLayout.get_pits_from_object(pits_list, widget)
 
     def get_pits(self) -> List[Pit]:
+        """
+        get all the pits in list
+        :return: the list of pits
+        """
         return_list = []
         PlayLayout.get_pits_from_object(return_list, self)
         return return_list
 
 
 class MainLayout(BoxLayout):
+    """the app lock"""
     pits_layout: PlayLayout
     title_text: Label
 
 
 class Mangala(App):
+    """start point of the app"""
     game_layout: GridLayout
     turn_manager: UIBoard
 
-    def build(self):
+    def build(self) -> MainLayout:
+        """
+        build the app. kivy func
+        :return: what we wont to build
+        """
         self.game_layout = MainLayout()
 
         return self.game_layout
 
-    def on_start(self):
+    def on_start(self) -> None:
+        """
+        init the classes and pit
+        :return: None
+        """
         pits_list = self.game_layout.pits_layout.get_pits()
 
         self.turn_manager = UIBoard(pits_list, self.game_layout.title_text)
 
-        for x in pits_list:
-            x.init(self.turn_manager)
+        for pit in pits_list:
+            pit.init(self.turn_manager)
 
 
 if __name__ == '__main__':

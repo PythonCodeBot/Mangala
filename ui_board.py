@@ -19,7 +19,7 @@ class UIBoard:
     pit_to_index: Dict[Pit, int]
     data_to_pit: Dict[PitData, Pit]
     # R G B
-    COLORS: List[List[int]] = [[0, 1, 0], [1, 1, 0]]
+    COLORS: List[List[int]] = [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1]]
     board_mutex: Lock
 
     def __init__(self, pits: List[Pit], title_text: Label):
@@ -131,7 +131,7 @@ class UIBoard:
 
         # make move by reading data impact
         #self.call_instructions(instructions)
-
+        self.pits_default_colors()
         self.board_mutex.release()
         # update he change buttons
 
@@ -142,5 +142,11 @@ class UIBoard:
         self.backup = None
 
         #self.board_data.set_turn(self.board_data.now_turn)
-        old_turn = self.board_data.now_turn
-        self.call_instructions(self.board_data.pit_buttons_disabled(self.board_data.now_turn))
+        self.pits_default_colors()
+        new_turn = self.board_data.now_turn
+        self.call_instructions(self.board_data.pit_buttons_disabled(new_turn))
+
+
+    def pits_default_colors(self):
+        for pit in self.pits:
+            pit.background_color = self.COLORS[2]
