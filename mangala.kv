@@ -1,7 +1,7 @@
-#:import JACKPOT_TYPES_CODES main.JACKPOT_TYPES_CODES
-#:import PIT_TYPES_CODES main.PIT_TYPES_CODES
+#:import JACKPOT_TYPES_CODES defs.JACKPOT_TYPES_CODES
+#:import PIT_TYPES_CODES defs.PIT_TYPES_CODES
 
-<Pit>:
+<UiPit>:
     pit_type: -1
     stones_text: stones_text
     id: stones_text
@@ -13,17 +13,17 @@
     spacing: 10
 
 
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
-    Pit:
+    UiPit:
         pit_type: PIT_TYPES_CODES[root.pit_type]
 
 <PitColumn>:
@@ -38,11 +38,11 @@
     spacing: 10
     size_hint: (1, 0.9)
 
-    Pit:
+    UiPit:
         pit_type: JACKPOT_TYPES_CODES[0]
         size_hint_x: 0.4
     PitColumn
-    Pit:
+    UiPit:
         pit_type: JACKPOT_TYPES_CODES[1]
         size_hint_x: 0.4
 

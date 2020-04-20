@@ -1,65 +1,76 @@
-from typing import List, Dict
+"""this class connect the backend and the ui"""
+
+from __future__ import annotations
+
+from typing import List, Dict, Iterator
 from copy import deepcopy
+from threading import Thread, Lock
 
 from kivy.uix.label import Label
 
 from pit_board import PitBoard
-import data_types
-from data_types import PitData, Node, ImpactData, UiMethodsDefine
-from pit import Pit
-from threading import Thread, Lock
+from data_types import PitData, ImpactData, UiMethodsIndexes
+import uipit
+
 
 class UIBoard:
-    """connect the UI to the logic"""
+    """
+    connect the UI to the logic
+    get from the board instructions and exec them
+    """
 
-    board_data: PitBoard
-    pits: List[Pit]
-    title: Label
+    board_data: PitBoard  # the logic of the board. where the data of the pits are
+    pits: List[uipit.UiPit]  # the ui pits
+    title: Label  # the title of the game
     backup: PitBoard  # is the old board before user confirm the move
-    pit_to_index: Dict[Pit, int]
-    data_to_pit: Dict[PitData, Pit]
-    # R G B
-    COLORS: List[List[int]] = [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1]]
-    board_mutex: Lock
+    pit_to_index: Dict[uipit.UiPit, int]  # from data to index
+    COLORS: List[List[int]] = [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1]]  # colors
+    board_mutex: Lock  # mutex for preventing freeze
 
-    def __init__(self, pits: List[Pit], title_text: Label):
+    def __init__(self, pits: List[uipit.UiPit], title_text: Label) -> None:
+        """
+        init the class
+        :param pits: the ui pits to change them from the
+        :param title_text: the title of the gameinstructions
+        """
         self.backup = None
         self.pit_to_index = {}
-        self.node_to_pit = {}
-        self.data_to_pit = {}
         self.pits = pits
         self.board_data = PitBoard(pits)
         self.title = title_text
         self.board_mutex = Lock()
 
-        self.ui_funcs = {UiMethodsDefine.UPDATE_TEXT_INDEX: self.update_pit,
-                    UiMethodsDefine.ENABLE_PIT_INDEX: self.enable_pit,
-                    UiMethodsDefine.DISABLE_PIT_INDEX: self.disable_pit,
-                    UiMethodsDefine.CHANGE_TITLE_INDEX: self.update_title,
-                    UiMethodsDefine.TAKE_OPPONENT_STONES_INDEX: self.steal_stones,
-                    UiMethodsDefine.ANOTHER_TURN_INDEX: self.another_turn}
+        self.ui_funcs = {
+            UiMethodsIndexes.UPDATE_TEXT: self.update_pit,
+            UiMethodsIndexes.ENABLE_PIT: self.enable_pit,
+            UiMethodsIndexes.DISABLE_PIT: self.disable_pit,
+            UiMethodsIndexes.CHANGE_TITLE: self.update_title,
+            UiMethodsIndexes.TAKE_OPPONENT_STONES: self.steal_stones,
+            UiMethodsIndexes.ANOTHER_TURN: self.another_turn
+        }
 
         node = self.board_data.pits_link_list.start
         for index, pit in enumerate(pits):
             self.pit_to_index[pit] = index
-            self.data_to_pit[node.data] = pit
             pit.update_text(node.data.stones)
             node = node.right_node
 
         instructions = self.board_data.set_turn(True)
         # make move by reading data impact
         self.call_instructions(instructions)
-        from time import sleep
 
-        #pits[13].disabled = False
-
-    def call_ui_func(self, return_data: ImpactData):
-        print(self.ui_funcs[return_data.impact_index].__name__)
+    def call_ui_func(self, return_data: ImpactData) -> None:
+        """
+        get the func and call it
+        :param return_data: the arg for the func
+        :return: None
+        """
+        # print(self.ui_funcs[return_data.impact_index].__name__)
         self.ui_funcs[return_data.impact_index](return_data.arg)
 
-    def update_pit(self, pit: PitData):
+    def update_pit(self, pit: PitData) -> None:
         """
-        update the stones
+        update the stones value
         :return: None
         """
 
@@ -67,40 +78,95 @@ class UIBoard:
 
         ui_pit.update_text(self.board_data.pits_list[pit.index].stones)
 
-    def update_title(self, new_text: str):
+    def update_title(self, new_text: str) -> None:
+        """
+        change the title
+        :param new_text: the new title
+        :return: None
+        """
         self.title.text = new_text
 
-    def get_ui_pit(self, pit: PitData) -> Pit:
+    def get_ui_pit(self, pit: PitData) -> uipit.UiPit:
+        """
+        from data to ui pit
+        :param pit: the data of the pit
+        :return: ui pit
+        """
         return self.pits[pit.index]
 
-    def enable_pit(self, pit: PitData):
+    def enable_pit(self, pit: PitData) -> None:
+        """
+        make the pit clickable
+        :param pit: the data if the pit
+        :return: None
+        """
         self.do_enable_pit(pit, True)
 
-    def disable_pit(self, pit: PitData):
+    def disable_pit(self, pit: PitData) -> None:
+        """
+        make the pit not clickable
+        :param pit: the data if the pit
+        :return: None
+        """
         self.do_enable_pit(pit, False)
 
-    def update_color(self, pit: PitData, color_id: int):
+    def update_color(self, pit: PitData, color_id: int) -> None:
+        """
+        chnge the color of the pit
+        :param pit: the wonted pit
+        :param color_id: id of the color
+        :return: None
+        """
         pit = self.get_ui_pit(pit)
         pit.background_color = self.COLORS[color_id]
 
-    def another_turn(self, pit: PitData):
+    def another_turn(self, pit: PitData) -> None:
+        """
+        if the next the player will have another turn
+        :param pit: the pit that change the color
+        :return: None
+        """
         self.update_color(pit, 0)
 
-    def steal_stones(self, pit: PitData):
+    def steal_stones(self, pit: PitData) -> None:
+        """
+        if the next the player will take the stones of the enemy
+        :param pit: the pit that change the color
+        :return: None
+        """
         self.update_color(pit, 1)
 
-    def do_enable_pit(self, pit: PitData, enable: bool):
+    def do_enable_pit(self, pit: PitData, enable: bool) -> None:
+        """
+        enable or disabled pit
+        :param pit: the pit we wont to change
+        :param enable: enable or disabled
+        :return: None
+        """
         ui_pit = self.get_ui_pit(pit)
         ui_pit.disabled = not enable
 
-    def call_instructions(self, instructions):
+    def call_instructions(self, instructions: Iterator[ImpactData]) -> None:
+        """
+        call the funcs of the instructions
+        :param instructions: the instructions
+        :return: None
+        """
         for instruction in instructions:
             self.call_ui_func(instruction)
 
-    def show_move_thread(self, played_pit: Pit):
-        # save backup
+    def show_move_thread(self, played_pit: uipit.UiPit) -> None:
+        """
+        show the next move. just make the turn but save the before if user not clicked
+        :param played_pit: the button that user over
+        :return: None
+        """
+
+        # stop or wait for the next show.
+        # prevent show two times at once
         self.board_mutex.acquire()
-        # self.thread.start()
+
+        # save before
         self.backup = deepcopy(self.board_data)
 
         instructions = self.board_data.make_move(self.pit_to_index[played_pit])
@@ -108,21 +174,30 @@ class UIBoard:
         # make move by reading data impact
         self.call_instructions(instructions)
 
-    def show_move(self, played_pit: Pit):
-        """when user over"""
-        self.thread = Thread(target=self.show_move_thread, args=(played_pit,))
-        self.thread.start()
+    def show_move(self, played_pit: uipit.UiPit) -> None:
+        """
+        show the move. without making it
+        this func are called when the user hover over the button.
+        :param played_pit: which button call it
+        :return:
+        """
+        thread = Thread(target=self.show_move_thread, args=(played_pit,))
+        thread.start()
 
-
-        # self.thread.start()
-
-    def update_text_of_pits(self):
+    def update_text_of_pits(self) -> None:
+        """
+        update the number of pits in all pits
+        :return: None
+        """
         for pit in self.board_data.pits_list:
             self.update_pit(pit)
 
-    def cancel_move(self):
-        """when user leave"""
-
+    def cancel_move(self) -> None:
+        """
+        if user not click the button
+        this func are called when the user stop hovering over the button.
+        :return: None
+        """
 
         # get backup
         self.board_data = self.backup
@@ -130,23 +205,30 @@ class UIBoard:
         self.update_text_of_pits()
 
         # make move by reading data impact
-        #self.call_instructions(instructions)
         self.pits_default_colors()
-        self.board_mutex.release()
-        # update he change buttons
 
-    def confirm_move(self):
-        """when user press"""
+        # wait for the next hover
+        self.board_mutex.release()
+
+    def confirm_move(self) -> None:
+        """
+        if user not click the button
+        this func are called when the user click button.
+        :return: None
+        """
+
         self.board_mutex.release()
         # delete backup and buttons
         self.backup = None
 
-        #self.board_data.set_turn(self.board_data.now_turn)
         self.pits_default_colors()
         new_turn = self.board_data.now_turn
         self.call_instructions(self.board_data.pit_buttons_disabled(new_turn))
 
-
-    def pits_default_colors(self):
+    def pits_default_colors(self) -> None:
+        """
+        make all the pits defult color
+        :return: None
+        """
         for pit in self.pits:
             pit.background_color = self.COLORS[2]

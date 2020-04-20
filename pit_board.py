@@ -1,42 +1,42 @@
-"""pit board class"""
+"""backend of the logic of the game"""
+
+from __future__ import annotations
+
 from typing import List, Iterator, Dict
 
 from data_types import Player, PitData, ImpactData
 from link_list import LinkList
 from link_list import Node
-from pit import Pit
+import uipit
 
 
 class PitBoard:
     """
-    logic of the game, turn, and board
+    logic of the game, turn, and move stones
     """
 
-    now_turn = False
+    now_turn = False  # who turn is it
     player_one: Player  # player one data
     player_two: Player  # player two data
     pits_list: List[PitData]  # list of all the pits, include jackpots
     pits_link_list: LinkList[PitData]  # link list of the pits
-    pits_to_node: Dict[PitData, Node[PitData]]
+    pits_to_node: Dict[PitData, Node[PitData]]  # fast way to get the node from pit
 
-    def __init__(self, pits: List[Pit]) -> None:
+    def __init__(self, pits: List[uipit.UiPit]) -> None:
         """
         init the TurnManager and the pits
-        :param pits: first is player one jackpot. last is player two jackpot
+        :param pits: list of pits first is player one jackpot. last is player two jackpot
         """
-
 
         self.pits_list = []
         self.pits_to_node = {}
         self.pits_list.append(PitData.jackpot(0, 0))
         self.size_of_pits = len(pits)
 
-        # 13 ...7
-        # 6  ...1  0
         half_size_pits = self.size_of_pits//2
 
         # feel the non jackpot pits
-        for index in range(1,self.size_of_pits - 1):
+        for index in range(1, self.size_of_pits - 1):
             player_index = int(index > half_size_pits)
             self.pits_list.append(PitData(player_index, index))
 
@@ -54,13 +54,14 @@ class PitBoard:
 
         self.pits_to_node[self.player_one.jackpot] = self.pits_link_list.start
         # store the like list
+
         for index, (player_one_pit, player_two_pit) in enumerate(players_pits):
             # update codes
 
             most_right = self.pits_link_list.push_right(player_one_pit)
             most_left = self.pits_link_list.push_left(player_two_pit)
 
-            # add parallel data to the class. this is the parallel pit
+            # this is the parallel pit
             most_left.parallel_node = most_right
             most_right.parallel_node = most_left
 
@@ -84,28 +85,35 @@ class PitBoard:
                 return True
         return False
 
+    def have_win(self) -> bool:
+        """
+        check if somebody win
+        :return: if somebody win
+        """
+        return not self.have_stones(True) or not self.have_stones(False)
+
     def set_turn(self, last_played: bool) -> Iterator[ImpactData]:
         """
-        change the turn. check if someone is win
+        change the turn and check if someone is win
         :param last_played: who last play
-        :return: if game end
+        :return: the actions the ui need to do
         """
 
         now_turn = self.now_turn
-        if sum([x.stones for x in self.pits_list]) != 48:
+        if sum([pit.stones for pit in self.pits_list]) != 48:
             print("Stone Missing or adding, show Ones")
 
-        for x in self.pit_buttons_disabled(now_turn):
-            yield x
+        for instruction in self.pit_buttons_disabled(now_turn):
+            yield instruction
 
         # fixme THE FUCK?
         # if somebody don't have stones
-        if not self.have_stones(True) or not self.have_stones(False):
+        if self.have_win():
             print("END GAME")
             last_played_player = self.get_player(not last_played)
-            for x in self.pits_list[1:-1]:
-                last_played_player.jackpot.stones += x.stones
-                x.stones = 0
+            for pit in self.pits_list[1:-1]:
+                last_played_player.jackpot.stones += pit.stones
+                pit.stones = 0
                 # x.update_text()
 
             # last_played_player.jackpot.update_text()
@@ -130,16 +138,21 @@ class PitBoard:
             return self.connect_generator(enable_pits, disable_pits)
 
     @staticmethod
-    def connect_generator(*generators):
+    def connect_generator(*generators) -> Iterator:
+        """
+        get generators and return one generator
+        :param generators: the generators we wont to mash together
+        :return: Iterator of all the enter generators
+        """
         for generator in generators:
             for value in generator:
                 yield value
 
     def pit_buttons_disabled(self, now_turn: bool) -> Iterator[ImpactData]:
         """
-        enable of disable the needed button by user turn
+        enable of disable the buttons by user turn
         :param now_turn: which turn
-        :return: None
+        :return: the actions the ui need to do
         """
         enables_pits = self.disabled_player_pits(now_turn, False)
         disable_pits = self.disabled_player_pits(not now_turn, not False)
@@ -151,7 +164,7 @@ class PitBoard:
         disabled or enable player pits buttons
         :param player: which player
         :param disable: disable or enable
-        :return: None
+        :return: the actions the ui need to do
         """
         wonted_player = self.get_player(player)
         yield ImpactData.disable_pit(wonted_player.jackpot)
@@ -167,7 +180,7 @@ class PitBoard:
         """
         get the next pit node
         :param pit_node: the start
-        :return: the next
+        :return: the next pit
         """
         return pit_node.right_node
 
@@ -179,17 +192,13 @@ class PitBoard:
         """
         return self.player_one if player else self.player_two
 
-    def get_jackpot(self, player: bool) -> Node[PitData]:
-        """
-        get the jackpot of the player
-        :param player: which player
-        :return: the jackpot node
-        """
-        link_list = self.pits_link_list
-        return link_list.start if player else link_list.most_right
-
     def first_stones_logic(self, start_node: Node[PitData]) \
             -> Iterator[ImpactData]:
+        """
+        move first stones until he get to the last stone
+        :param start_node: which pit the user move
+        :return: the actions the ui need to do
+        """
         other_player = self.get_player(self.now_turn)
 
         next_pit_node = self.get_next(start_node)
@@ -211,8 +220,24 @@ class PitBoard:
         # when getting to the end
         return next_pit_node
 
+    def can_take_stones(self, pit: Node[PitData]) -> bool:
+        """
+        if the user can take the parallel pits
+        :param pit: the pit he check
+        :return: if can or not
+        """
+        return pit.data in self.get_player(self.now_turn).pits \
+            and pit.data.is_empty()
+
     def last_stone_logic(self, start_pit: Node[PitData], last_node: Node[PitData]) \
             -> Iterator[ImpactData]:
+        """
+        make the last stone logic
+        :param start_pit: which pit the user moved
+        :param last_node: where the move get, where to make the last stone logic
+        for example: if the last stone land on empty player pit and so one
+        :return: the actions the ui need to do
+        """
 
         my_player = self.get_player(not self.now_turn)
 
@@ -227,9 +252,7 @@ class PitBoard:
             yield ImpactData.another_turn(start_pit.data)
             # todo coloR
 
-        # if land on his empty pit
-        elif next_pit.data in self.get_player(self.now_turn).pits \
-                and next_pit.data.is_empty():
+        elif self.can_take_stones(next_pit):
             # take parallel pit stones to player jackpot
             # todo coloR
 
@@ -250,6 +273,11 @@ class PitBoard:
         self.now_turn = next_turn
 
     def make_move(self, pit_index: int) -> Iterator[ImpactData]:
+        """
+        just move
+        :param pit_index: which pit as index
+        :return: the actions the ui need to do
+        """
         player_turn = self.now_turn
 
         moved_pit = self.pits_list[pit_index]
@@ -262,10 +290,9 @@ class PitBoard:
                 yield next(first_stones)
             except StopIteration as return_next_pit:
                 # getting the last pit of the turn
-                for x in (self.last_stone_logic(moved_pit_node, return_next_pit.value)):
-                    yield x
+                for instruction in self.last_stone_logic(moved_pit_node, return_next_pit.value):
+                    yield instruction
                 break
 
         # update the turn
         self.set_turn(player_turn)
-
