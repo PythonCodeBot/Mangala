@@ -14,13 +14,13 @@ class PitBoard:
     """
     logic of the game, turn, and move stones
     """
-
     now_turn = False  # who turn is it
     player_one: Player  # player one data
     player_two: Player  # player two data
     pits_list: List[PitData]  # list of all the pits, include jackpots
     pits_link_list: LinkList[PitData]  # link list of the pits
     pits_to_node: Dict[PitData, Node[PitData]]  # fast way to get the node from pit
+    last_play: bool  # the who play the last turn
 
     def __init__(self, pits: List[uipit.UiPit]) -> None:
         """
@@ -92,35 +92,31 @@ class PitBoard:
         """
         return not self.have_stones(True) or not self.have_stones(False)
 
-    def set_turn(self, last_played: bool) -> Iterator[ImpactData]:
+    def set_turn(self) -> Iterator[ImpactData]:
         """
         change the turn and check if someone is win
-        :param last_played: who last play
         :return: the actions the ui need to do
         """
-
         now_turn = self.now_turn
-        if sum([pit.stones for pit in self.pits_list]) != 48:
-            print("Stone Missing or adding, show Ones")
+
+        assert sum([pit.stones for pit in self.pits_list]) == 48, "Stone Missing or adding stones in board"
 
         for instruction in self.pit_buttons_disabled(now_turn):
             yield instruction
 
-        # fixme THE FUCK?
         # if somebody don't have stones
         if self.have_win():
             print("END GAME")
-            last_played_player = self.get_player(not last_played)
+            last_played_player = self.get_player(self.last_play)
             for pit in self.pits_list[1:-1]:
                 last_played_player.jackpot.stones += pit.stones
                 pit.stones = 0
-                # x.update_text()
 
             # last_played_player.jackpot.update_text()
             # todo color
 
-            player_one_stones = self.get_player(True).jackpot.stones
-            player_two_stones = self.get_player(False).jackpot.stones
+            player_one_stones = self.get_player(False).jackpot.stones
+            player_two_stones = self.get_player(True).jackpot.stones
 
             if player_one_stones != player_two_stones:
 
@@ -130,12 +126,17 @@ class PitBoard:
             else:
                 new_title = "TIE!"
                 yield ImpactData.change_title(new_title)
-            print("game end")
 
             enable_pits = self.disabled_player_pits(now_turn, False)
             disable_pits = self.disabled_player_pits(not now_turn, not False)
 
-            return self.connect_generator(enable_pits, disable_pits)
+            # update text of the pits
+            for pit in self.pits_list:
+                yield ImpactData.update_text(pit)
+
+            # disable all the pits
+            for disable_pit in self.connect_generator(enable_pits, disable_pits):
+                yield disable_pit
 
     @staticmethod
     def connect_generator(*generators) -> Iterator:
@@ -246,15 +247,15 @@ class PitBoard:
 
         next_pit = last_node
         next_turn = not self.now_turn
+
+        # if have another turn
         if next_pit.data is my_player.jackpot:
             next_turn = self.now_turn
 
             yield ImpactData.another_turn(start_pit.data)
-            # todo coloR
 
         elif self.can_take_stones(next_pit):
             # take parallel pit stones to player jackpot
-            # todo coloR
 
             parallel_pit = last_node.parallel_node.data
 
@@ -278,14 +279,14 @@ class PitBoard:
         :param pit_index: which pit as index
         :return: the actions the ui need to do
         """
-        player_turn = self.now_turn
-
+        self.last_play = not self.now_turn
         moved_pit = self.pits_list[pit_index]
         moved_pit_node = self.pits_to_node[moved_pit]
 
         first_stones = self.first_stones_logic(moved_pit_node)
 
         while True:
+
             try:
                 yield next(first_stones)
             except StopIteration as return_next_pit:
@@ -293,6 +294,3 @@ class PitBoard:
                 for instruction in self.last_stone_logic(moved_pit_node, return_next_pit.value):
                     yield instruction
                 break
-
-        # update the turn
-        self.set_turn(player_turn)

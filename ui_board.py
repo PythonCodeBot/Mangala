@@ -31,7 +31,7 @@ class UIBoard:
         """
         init the class
         :param pits: the ui pits to change them from the
-        :param title_text: the title of the gameinstructions
+        :param title_text: the title of the game instructions
         """
         self.backup = None
         self.pit_to_index = {}
@@ -55,7 +55,7 @@ class UIBoard:
             pit.update_text(node.data.stones)
             node = node.right_node
 
-        instructions = self.board_data.set_turn(True)
+        instructions = self.board_data.set_turn()
         # make move by reading data impact
         self.call_instructions(instructions)
 
@@ -65,7 +65,6 @@ class UIBoard:
         :param return_data: the arg for the func
         :return: None
         """
-        # print(self.ui_funcs[return_data.impact_index].__name__)
         self.ui_funcs[return_data.impact_index](return_data.arg)
 
     def update_pit(self, pit: PitData) -> None:
@@ -112,7 +111,7 @@ class UIBoard:
 
     def update_color(self, pit: PitData, color_id: int) -> None:
         """
-        chnge the color of the pit
+        change the color of the pit
         :param pit: the wonted pit
         :param color_id: id of the color
         :return: None
@@ -168,7 +167,6 @@ class UIBoard:
 
         # save before
         self.backup = deepcopy(self.board_data)
-
         instructions = self.board_data.make_move(self.pit_to_index[played_pit])
 
         # make move by reading data impact
@@ -181,6 +179,7 @@ class UIBoard:
         :param played_pit: which button call it
         :return:
         """
+
         thread = Thread(target=self.show_move_thread, args=(played_pit,))
         thread.start()
 
@@ -222,12 +221,11 @@ class UIBoard:
         self.backup = None
 
         self.pits_default_colors()
-        new_turn = self.board_data.now_turn
-        self.call_instructions(self.board_data.pit_buttons_disabled(new_turn))
+        self.call_instructions(self.board_data.set_turn())
 
     def pits_default_colors(self) -> None:
         """
-        make all the pits defult color
+        make all the pits default color
         :return: None
         """
         for pit in self.pits:
