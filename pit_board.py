@@ -72,7 +72,6 @@ class PitBoard:
         self.pits_link_list.make_looped()
         self.pits_to_node[self.player_two.jackpot] = self.pits_link_list.most_right
 
-
     def have_stones(self, player: bool) -> bool:
         """
         if the player have any stones in his pits
@@ -114,7 +113,7 @@ class PitBoard:
                 pit.stones = 0
 
             # last_played_player.jackpot.update_text()
-            # todo color
+            # todo fix color
 
             player_one_stones = self.get_player(False).jackpot.stones
             player_two_stones = self.get_player(True).jackpot.stones

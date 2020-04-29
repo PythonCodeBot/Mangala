@@ -10,11 +10,13 @@ from kivy.uix.label import Label
 
 import pit_board
 from data_types import PitData, ImpactData, UiMethodsIndexes
+import defs
 import uipit
 import ai
 
 # todo fix the color when ai play
 # todo fix the finish game
+
 
 class UIBoard:
     """
@@ -54,15 +56,23 @@ class UIBoard:
             UiMethodsIndexes.ANOTHER_TURN: self.another_turn
         }
 
+        assert self.board_data.player_one.jackpot.stones == 0
+        assert self.board_data.player_two.jackpot.stones == 0
+
+        print(self.board_data.player_one.jackpot.index)
+        print(self.board_data.player_two.jackpot.index)
         instructions = self.board_data.set_turn()
         # make move by reading data impact
         self.call_instructions(instructions)
 
         node = self.board_data.pits_link_list.start
         for index, pit in enumerate(pits):
-            print(index)
             self.pit_to_index[pit] = index
-            stones = node.data.stones
+
+            stones = defs.START_STONES_PER_PIT
+            if index == 0 or index == len(pits) - 1:
+                stones = defs.START_STONES_PER_JACKPOT
+
             pit.update_text(stones)
             node = node.right_node
 
