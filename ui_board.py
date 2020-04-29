@@ -8,10 +8,13 @@ from threading import Thread, Lock
 
 from kivy.uix.label import Label
 
-from pit_board import PitBoard
+import pit_board
 from data_types import PitData, ImpactData, UiMethodsIndexes
 import uipit
+import ai
 
+# todo fix the color when ai play
+# todo fix the finish game
 
 class UIBoard:
     """
@@ -19,13 +22,14 @@ class UIBoard:
     get from the board instructions and exec them
     """
 
-    board_data: PitBoard  # the logic of the board. where the data of the pits are
+    board_data: pit_board.PitBoard  # the logic of the board. where the data of the pits are
     pits: List[uipit.UiPit]  # the ui pits
     title: Label  # the title of the game
-    backup: PitBoard  # is the old board before user confirm the move
+    backup: pit_board.PitBoard  # is the old board before user confirm the move
     pit_to_index: Dict[uipit.UiPit, int]  # from data to index
     COLORS: List[List[int]] = [[0, 1, 0, 1], [1, 1, 0, 1], [1, 1, 1, 1]]  # colors
     board_mutex: Lock  # mutex for preventing freeze
+    ai_logic: ai.AI
 
     def __init__(self, pits: List[uipit.UiPit], title_text: Label) -> None:
         """
@@ -36,7 +40,8 @@ class UIBoard:
         self.backup = None
         self.pit_to_index = {}
         self.pits = pits
-        self.board_data = PitBoard(pits)
+        self.board_data = pit_board.PitBoard(pits)
+        self.ai_logic = ai.AI(self)
         self.title = title_text
         self.board_mutex = Lock()
 
@@ -49,15 +54,21 @@ class UIBoard:
             UiMethodsIndexes.ANOTHER_TURN: self.another_turn
         }
 
-        node = self.board_data.pits_link_list.start
-        for index, pit in enumerate(pits):
-            self.pit_to_index[pit] = index
-            pit.update_text(node.data.stones)
-            node = node.right_node
-
         instructions = self.board_data.set_turn()
         # make move by reading data impact
         self.call_instructions(instructions)
+
+        node = self.board_data.pits_link_list.start
+        for index, pit in enumerate(pits):
+            print(index)
+            self.pit_to_index[pit] = index
+            stones = node.data.stones
+            pit.update_text(stones)
+            node = node.right_node
+
+        # if ai start
+        if self.board_data.now_turn:
+            self.play_ai()
 
     def call_ui_func(self, return_data: ImpactData) -> None:
         """
@@ -209,6 +220,19 @@ class UIBoard:
         # wait for the next hover
         self.board_mutex.release()
 
+    def play_ai(self):
+        print("ai turn!")
+        board = self.board_data
+        ai_play_index = self.ai_logic.play()
+        print(ai_play_index)
+        if ai_play_index != -1:
+            instructions = board.make_move(ai_play_index)
+            self.call_instructions(instructions)
+            self.call_instructions(self.board_data.set_turn())
+            print("who turn is it:", self.board_data.now_turn)
+        else:
+            print("cant play")
+
     def confirm_move(self) -> None:
         """
         if user not click the button
@@ -222,6 +246,8 @@ class UIBoard:
 
         self.pits_default_colors()
         self.call_instructions(self.board_data.set_turn())
+        while self.board_data.now_turn and not self.board_data.have_win():
+            self.play_ai()
 
     def pits_default_colors(self) -> None:
         """

@@ -7,15 +7,11 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
-from uipit import UiPit
+import uipit
 from ui_board import UIBoard
 # todo:
-# why is it crash on 3th turn =2
-# add minimax algorithm =3->5
-# playyyy testing a alotttt =
 
 # return to original colors of buttons =2
-# buttons colors =2
 # make layouts better looking =6
 # add colors =6
 # animation
@@ -44,7 +40,7 @@ class PlayLayout(BoxLayout):
     """where the user can interact with the game"""
 
     @staticmethod
-    def get_pits_from_object(pits_list: List[UiPit], object_parent) -> None:
+    def get_pits_from_object(pits_list: List[uipit.UiPit], object_parent) -> None:
         """
         save the pits of children of this widgets.
         :param pits_list: the list where we stone the list. (pointer)
@@ -52,12 +48,12 @@ class PlayLayout(BoxLayout):
         :return: None
         """
         for widget in object_parent.children:
-            if isinstance(widget, UiPit):
+            if isinstance(widget, uipit.UiPit):
                 pits_list.append(widget)
             else:
                 PlayLayout.get_pits_from_object(pits_list, widget)
 
-    def get_pits(self) -> List[UiPit]:
+    def get_pits(self) -> List[uipit.UiPit]:
         """
         get all the pits in list
         :return: the list of pits

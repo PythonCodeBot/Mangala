@@ -72,6 +72,7 @@ class PitBoard:
         self.pits_link_list.make_looped()
         self.pits_to_node[self.player_two.jackpot] = self.pits_link_list.most_right
 
+
     def have_stones(self, player: bool) -> bool:
         """
         if the player have any stones in his pits
@@ -254,7 +255,7 @@ class PitBoard:
 
             yield ImpactData.another_turn(start_pit.data)
 
-        elif self.can_take_stones(next_pit):
+        if self.can_take_stones(next_pit):
             # take parallel pit stones to player jackpot
 
             parallel_pit = last_node.parallel_node.data
@@ -262,13 +263,15 @@ class PitBoard:
             yield ImpactData.take_opponent_stones(parallel_pit)
 
             my_player.jackpot.stones += parallel_pit.stones
+            my_player.jackpot.stones += 1  # take also the stone that land on the empty pit
             parallel_pit.stones = 0
 
             yield ImpactData.update_text(parallel_pit)
 
             yield ImpactData.update_text(my_player.jackpot)
+        else:
+            next_pit.data.stones += 1
 
-        next_pit.data.stones += 1
         yield ImpactData.update_text(next_pit.data)
 
         self.now_turn = next_turn
