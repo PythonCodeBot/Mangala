@@ -8,13 +8,13 @@ from data_types import Player, PitData, ImpactData
 from link_list import LinkList
 from link_list import Node
 import uipit
-
+from defs import AI, PLAYER
 
 class PitBoard:
     """
     logic of the game, turn, and move stones
     """
-    now_turn = False  # who turn is it
+    now_turn = PLAYER  # who turn is it
     player_one: Player  # player one data
     player_two: Player  # player two data
     pits_list: List[PitData]  # list of all the pits, include jackpots
@@ -90,7 +90,20 @@ class PitBoard:
         check if somebody win
         :return: if somebody win
         """
-        return not self.have_stones(True) or not self.have_stones(False)
+        return not self.have_stones(AI) or not self.have_stones(PLAYER)
+
+    @staticmethod
+    def end_pit_logic(player: Player) -> None:
+        """
+        then end game, points logic
+        :param player: which player to make the logic
+        :return: None
+        """
+        print("Player:", player)
+        for pit in player.pits:
+            print(pit.stones)
+            player.jackpot.stones += pit.stones
+            pit.stones = 0
 
     def set_turn(self) -> Iterator[ImpactData]:
         """
@@ -107,16 +120,15 @@ class PitBoard:
         # if somebody don't have stones
         if self.have_win():
             print("END GAME")
-            last_played_player = self.get_player(self.last_play)
-            for pit in self.pits_list[1:-1]:
-                last_played_player.jackpot.stones += pit.stones
-                pit.stones = 0
+
+            self.end_pit_logic(self.player_one)
+            self.end_pit_logic(self.player_two)
 
             # last_played_player.jackpot.update_text()
             # todo fix color
 
-            player_one_stones = self.get_player(False).jackpot.stones
-            player_two_stones = self.get_player(True).jackpot.stones
+            player_one_stones = self.get_player(PLAYER).jackpot.stones
+            player_two_stones = self.get_player(AI).jackpot.stones
 
             if player_one_stones != player_two_stones:
 
@@ -228,7 +240,7 @@ class PitBoard:
         :return: if can or not
         """
         return pit.data in self.get_player(self.now_turn).pits \
-            and pit.data.is_empty()
+            and pit.data.is_empty() and pit.parallel_node.data.stones > 0
 
     def last_stone_logic(self, start_pit: Node[PitData], last_node: Node[PitData]) \
             -> Iterator[ImpactData]:
