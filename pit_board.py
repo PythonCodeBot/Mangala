@@ -72,6 +72,18 @@ class PitBoard:
         self.pits_link_list.make_looped()
         self.pits_to_node[self.player_two.jackpot] = self.pits_link_list.most_right
 
+    @staticmethod
+    def end_pit_logic(jackpot: PitData , pits: List[PitData]) -> None:
+        """
+        then end game, points logic
+        :param player: which player to make the logic
+        :return: None
+        """
+        for pit in pits:
+            jackpot.stones += pit.stones
+            pit.stones = 0
+
+
     def have_stones(self, player: bool) -> bool:
         """
         if the player have any stones in his pits
@@ -99,10 +111,15 @@ class PitBoard:
         """
         now_turn = self.now_turn
 
-        assert sum([pit.stones for pit in self.pits_list]) == 48, "Stone Missing or adding stones in board"
+        # assert sum([pit.stones for pit in self.pits_list]) == 48, "Stone Missing or adding stones in board"
 
         for instruction in self.pit_buttons_disabled(now_turn):
             yield instruction
+
+        #print(self.player_one.jackpot is self.player_two.jackpot)
+        #self.player_one.jackpot.stones = 100
+        #self.player_two.pits[0].stones = 100
+        #self.player_two.pits[-1].stones = 100
 
         # if somebody don't have stones
         if self.have_win():
@@ -112,8 +129,9 @@ class PitBoard:
                 last_played_player.jackpot.stones += pit.stones
                 pit.stones = 0
 
-            # last_played_player.jackpot.update_text()
-            # todo fix color
+            # todo: fix the player class
+            self.end_pit_logic(self.player_one.jackpot, self.player_two.pits)
+            self.end_pit_logic(self.player_two.jackpot, self.player_one.pits)
 
             player_one_stones = self.get_player(False).jackpot.stones
             player_two_stones = self.get_player(True).jackpot.stones
@@ -228,7 +246,7 @@ class PitBoard:
         :return: if can or not
         """
         return pit.data in self.get_player(self.now_turn).pits \
-            and pit.data.is_empty()
+            and pit.data.is_empty() and pit.parallel_node.data.stones > 0
 
     def last_stone_logic(self, start_pit: Node[PitData], last_node: Node[PitData]) \
             -> Iterator[ImpactData]:
