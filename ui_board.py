@@ -56,11 +56,6 @@ class UIBoard:
             UiMethodsIndexes.ANOTHER_TURN: self.another_turn
         }
 
-        assert self.board_data.player_one.jackpot.stones == 0
-        assert self.board_data.player_two.jackpot.stones == 0
-
-        print(self.board_data.player_one.jackpot.index)
-        print(self.board_data.player_two.jackpot.index)
         instructions = self.board_data.set_turn()
         # make move by reading data impact
         self.call_instructions(instructions)
@@ -239,6 +234,7 @@ class UIBoard:
             instructions = board.make_move(ai_play_index)
             self.call_instructions(instructions)
             self.call_instructions(self.board_data.set_turn())
+            self.pits_default_colors()
             print("who turn is it:", self.board_data.now_turn)
         else:
             print("cant play")
