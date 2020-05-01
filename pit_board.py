@@ -111,27 +111,24 @@ class PitBoard:
         """
         now_turn = self.now_turn
 
-        # assert sum([pit.stones for pit in self.pits_list]) == 48, "Stone Missing or adding stones in board"
+        assert sum([pit.stones for pit in self.pits_list]) == 48, "Stone Missing or adding stones in board"
 
         for instruction in self.pit_buttons_disabled(now_turn):
             yield instruction
 
         #print(self.player_one.jackpot is self.player_two.jackpot)
-        #self.player_one.jackpot.stones = 100
-        #self.player_two.pits[0].stones = 100
-        #self.player_two.pits[-1].stones = 100
 
         # if somebody don't have stones
         if self.have_win():
             print("END GAME")
-            last_played_player = self.get_player(self.last_play)
-            for pit in self.pits_list[1:-1]:
-                last_played_player.jackpot.stones += pit.stones
-                pit.stones = 0
+            #last_played_player = self.get_player(self.last_play)
+            #for pit in self.pits_list[1:-1]:
+                #last_played_player.jackpot.stones += pit.stones
+                #pit.stones = 0
 
             # todo: fix the player class
-            self.end_pit_logic(self.player_one.jackpot, self.player_two.pits)
             self.end_pit_logic(self.player_two.jackpot, self.player_one.pits)
+            self.end_pit_logic(self.player_one.jackpot, self.player_two.pits)
 
             player_one_stones = self.get_player(False).jackpot.stones
             player_two_stones = self.get_player(True).jackpot.stones
