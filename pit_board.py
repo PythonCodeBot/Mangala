@@ -10,6 +10,7 @@ from link_list import Node
 import uipit
 from defs import AI, PLAYER
 
+
 class PitBoard:
     """
     logic of the game, turn, and move stones
@@ -72,6 +73,18 @@ class PitBoard:
         self.pits_link_list.make_looped()
         self.pits_to_node[self.player_two.jackpot] = self.pits_link_list.most_right
 
+    @staticmethod
+    def end_pit_logic(jackpot: PitData, pits: List[PitData]) -> None:
+        """
+        then end game, points logic
+        :param jackpot: where to save the stones
+        :param pits: pits to take their stones
+        :return: None
+        """
+        for pit in pits:
+            jackpot.stones += pit.stones
+            pit.stones = 0
+
     def have_stones(self, player: bool) -> bool:
         """
         if the player have any stones in his pits
@@ -92,19 +105,6 @@ class PitBoard:
         """
         return not self.have_stones(AI) or not self.have_stones(PLAYER)
 
-    @staticmethod
-    def end_pit_logic(player: Player) -> None:
-        """
-        then end game, points logic
-        :param player: which player to make the logic
-        :return: None
-        """
-        print("Player:", player)
-        for pit in player.pits:
-            print(pit.stones)
-            player.jackpot.stones += pit.stones
-            pit.stones = 0
-
     def set_turn(self) -> Iterator[ImpactData]:
         """
         change the turn and check if someone is win
@@ -121,11 +121,9 @@ class PitBoard:
         if self.have_win():
             print("END GAME")
 
-            self.end_pit_logic(self.player_one)
-            self.end_pit_logic(self.player_two)
-
-            # last_played_player.jackpot.update_text()
-            # todo fix color
+            # todo: fix the player class
+            self.end_pit_logic(self.player_two.jackpot, self.player_one.pits)
+            self.end_pit_logic(self.player_one.jackpot, self.player_two.pits)
 
             player_one_stones = self.get_player(PLAYER).jackpot.stones
             player_two_stones = self.get_player(AI).jackpot.stones
