@@ -73,16 +73,16 @@ class PitBoard:
         self.pits_to_node[self.player_two.jackpot] = self.pits_link_list.most_right
 
     @staticmethod
-    def end_pit_logic(jackpot: PitData , pits: List[PitData]) -> None:
+    def end_pit_logic(jackpot: PitData, pits: List[PitData]) -> None:
         """
         then end game, points logic
-        :param player: which player to make the logic
+        :param jackpot: where to save the stones
+        :param pits: pits to take their stones
         :return: None
         """
         for pit in pits:
             jackpot.stones += pit.stones
             pit.stones = 0
-
 
     def have_stones(self, player: bool) -> bool:
         """
@@ -116,15 +116,9 @@ class PitBoard:
         for instruction in self.pit_buttons_disabled(now_turn):
             yield instruction
 
-        #print(self.player_one.jackpot is self.player_two.jackpot)
-
         # if somebody don't have stones
         if self.have_win():
             print("END GAME")
-            #last_played_player = self.get_player(self.last_play)
-            #for pit in self.pits_list[1:-1]:
-                #last_played_player.jackpot.stones += pit.stones
-                #pit.stones = 0
 
             # todo: fix the player class
             self.end_pit_logic(self.player_two.jackpot, self.player_one.pits)

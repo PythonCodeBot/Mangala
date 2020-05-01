@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from defs import JACKPOT_TYPES_CODES,\
     PIT_TYPES_CODES, START_STONES_PER_PIT, START_STONES_PER_JACKPOT
-from math import pi
+
 
 class UiMethodsIndexes:
     """ui methods indexes for """
