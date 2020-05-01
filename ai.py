@@ -151,9 +151,8 @@ class AI:
                 beta = min(eval, beta)
 
             if beta <= alpha:
-                #return_index = possibility.index
-                #break
-                pass
+                return_index = possibility.index
+                break
 
         if start:
             return return_index
